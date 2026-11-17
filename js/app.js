@@ -131,9 +131,11 @@ document.addEventListener('focusout', () => { if (pendingRender) setTimeout(sche
 function switchTab(name, force = false) {
   if (!views[name]) return;
   if (name === tab && !force) {
+    views[tab].reselect?.();
     $('#view').scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
+  if (!force) views[tab].leave?.();
   tab = name;
   localStorage.setItem('tab', name);
   $$('.tab').forEach((b) => {

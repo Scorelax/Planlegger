@@ -1,7 +1,7 @@
 // Lager-fanen: lager (kjøleskap, fryser …), varer og middagsrester.
 import { state, db } from '../state.js';
 import {
-  esc, norm, icon, toast, openSheet, closeTop, confirmDialog, attachSuggest,
+  esc, norm, icon, toast, openSheet, closeTop, confirmDialog, attachSuggest, pushBack, topIsBackStep,
   daysSince, daysUntil, ageLabel, shortDate, toDateInput, parseDate, $,
 } from '../util.js';
 import {
@@ -10,16 +10,30 @@ import {
   fmtWeight, WEIGHT_UNITS,
 } from '../logic.js';
 
-let filter = localStorage.getItem('inv-filter') || 'all';
+// current: null = oversikt over alle lager, 'leftovers' = middagsrester, ellers et lager-ID.
+let current = null;
 let query = '';
+
+function openStorage(id) {
+  if (current) return;
+  current = id;
+  query = '';
+  pushBack(() => { current = null; query = ''; inventoryView.mount(document.getElementById('view')); });
+  inventoryView.mount(document.getElementById('view'));
+  document.getElementById('view').scrollTop = 0;
+}
+const backToOverview = () => { if (current && topIsBackStep()) closeTop(); };
 
 export const inventoryView = {
   title: 'Lager',
   mount(el) {
+    const placeholder = current === 'leftovers' ? 'Søk i rester…'
+      : current ? `Søk i ${storageById(current)?.name || 'lageret'}…` : 'Søk etter vare i alle lager…';
     el.innerHTML = `
       <div class="toolbar">
+        <div id="inv-head"></div>
         <label class="search">${icon('search')}
-          <input id="inv-search" type="search" placeholder="Søk i lageret…" value="${esc(query)}" autocomplete="off" enterkeyhint="search">
+          <input id="inv-search" type="search" placeholder="${esc(placeholder)}" value="${esc(query)}" autocomplete="off" enterkeyhint="search">
         </label>
       </div>
       <div id="inv-body"></div>`;
@@ -27,15 +41,22 @@ export const inventoryView = {
     this.update();
   },
   update() {
+    const head = document.getElementById('inv-head');
     const body = document.getElementById('inv-body');
+    if (head) head.innerHTML = renderHead();
     if (body) body.innerHTML = renderBody();
   },
+  // Kalles når man bytter bort fra fanen, eller trykker på Lager-fanen igjen
+  leave() { backToOverview(); },
+  reselect() { backToOverview(); },
   fab() {
-    if (filter === 'leftovers') openLeftoverSheet(null);
-    else openItemSheet(null, { storageId: storageById(filter) ? filter : undefined, allowLeftover: true });
+    if (current === 'leftovers') openLeftoverSheet(null);
+    else openItemSheet(null, { storageId: storageById(current) ? current : undefined, allowLeftover: !current });
   },
   actions: {
-    'inv-filter': (el) => { filter = el.dataset.f; localStorage.setItem('inv-filter', filter); inventoryView.update(); },
+    'open-storage': (el) => openStorage(el.dataset.id),
+    'inv-back': () => backToOverview(),
+    'manage-storages': () => document.getElementById('settings-btn').click(),
     'edit-item': (el) => openItemSheet(getItem(el)),
     'inc': (el) => { const it = getItem(el); if (it) setCount(it, (it.count || 0) + 1); },
     'dec': (el) => { const it = getItem(el); if (it) setCount(it, (it.count || 0) - 1); },
@@ -73,51 +94,85 @@ function leftoverDone(l) {
 }
 
 // ---------- Rendering ----------
+function renderHead() {
+  if (!current) return '';
+  const s = storageById(current);
+  if (current !== 'leftovers' && !s) { setTimeout(backToOverview, 0); return ''; }
+  const title = current === 'leftovers' ? '🍲 Middagsrester' : `${s.icon || ''} ${s.name}`;
+  const n = current === 'leftovers'
+    ? `${state.leftovers.reduce((a, l) => a + (Number(l.portions) || 0), 0)} porsj.`
+    : `${state.items.filter((i) => i.storageId === current).length} varer`;
+  return `<div class="storage-head">
+    <button class="icon-btn" data-action="inv-back" aria-label="Tilbake til alle lager">${icon('back')}</button>
+    <h2>${esc(title)}</h2><span class="storage-head-n">${esc(n)}</span>
+  </div>`;
+}
+
 function renderBody() {
-  const storages = sortedStorages();
-  if (filter !== 'all' && filter !== 'leftovers' && !storageById(filter)) filter = 'all';
+  if (!state.loaded.items || !state.loaded.storages) return skeleton();
   const q = norm(query);
-  const items = state.items.filter((i) => !q || norm(i.name).includes(q));
-  const lefts = state.leftovers.filter((l) => !q || norm(l.name).includes(q));
-  const portions = lefts.reduce((n, l) => n + (Number(l.portions) || 0), 0);
 
-  const chip = (f, label, n) =>
-    `<button class="chip ${filter === f ? 'active' : ''}" data-action="inv-filter" data-f="${f}">${esc(label)}<span class="chip-n">${n}</span></button>`;
-  let html = `<div class="chips">${chip('all', 'Alle', items.length)}${chip('leftovers', '🍲 Rester', portions)}${storages.map((s) =>
-    chip(s.id, `${s.icon || ''} ${s.name}`, items.filter((i) => i.storageId === s.id).length)).join('')}</div>`;
-
-  if (!state.loaded.items || !state.loaded.storages) return html + skeleton();
-
-  if (filter === 'leftovers') {
-    html += lefts.length
+  if (current === 'leftovers') {
+    const lefts = state.leftovers.filter((l) => !q || norm(l.name).includes(q));
+    return lefts.length
       ? `<div class="list">${sortLeftovers(lefts).map(leftoverCard).join('')}</div>`
-      : empty('bowl', 'Ingen middagsrester', 'Trykk + for å legge inn rester og antall porsjoner.');
-  } else if (filter === 'all') {
-    if (lefts.length) {
-      html += section('🍲 Middagsrester', `${portions} porsj.`, sortLeftovers(lefts).map(leftoverCard).join(''));
-    }
-    let shown = 0;
-    for (const s of storages) {
-      const its = items.filter((i) => i.storageId === s.id);
-      if (q && !its.length) continue;
-      shown += its.length;
-      html += section(`${s.icon || ''} ${s.name}`, its.length,
-        its.length ? sortItems(its).map(itemCard).join('') : `<div class="muted-row">Tomt</div>`);
-    }
-    const orphans = items.filter((i) => !storageById(i.storageId));
-    if (orphans.length) html += section('Uten lager', orphans.length, sortItems(orphans).map(itemCard).join(''));
-    if (q && !shown && !orphans.length && !lefts.length) html += empty('search', 'Ingen treff', `Fant ingenting som matcher «${query}».`);
-    if (!q && !state.items.length && !lefts.length) {
-      html += `<p class="hint center">Trykk <b>+</b> for å legge inn den første varen.</p>`;
-    }
-  } else {
-    const its = items.filter((i) => i.storageId === filter);
-    html += its.length
-      ? `<div class="list">${sortItems(its).map(itemCard).join('')}</div>`
+      : empty('bowl', q ? 'Ingen treff' : 'Ingen middagsrester', q ? '' : 'Trykk + for å legge inn rester og antall porsjoner.');
+  }
+  if (current) {
+    const its = state.items.filter((i) => i.storageId === current && (!q || norm(i.name).includes(q)));
+    return its.length
+      ? `<div class="list">${sortItems(its).map((it) => itemCard(it)).join('')}</div>`
       : empty('box', q ? 'Ingen treff' : 'Tomt her', q ? '' : 'Trykk + for å legge til varer i dette lageret.');
+  }
+
+  // Oversikt: søk viser treff på tvers av alle lager
+  if (q) {
+    const its = state.items.filter((i) => norm(i.name).includes(q));
+    const lefts = state.leftovers.filter((l) => norm(l.name).includes(q));
+    if (!its.length && !lefts.length) return empty('search', 'Ingen treff', `Fant ingenting som matcher «${query}».`);
+    return `<div class="list">${sortLeftovers(lefts).map(leftoverCard).join('')}${sortItems(its).map((it) => itemCard(it, true)).join('')}</div>`;
+  }
+  return storageGrid();
+}
+
+function storageGrid() {
+  const tiles = sortedStorages().map((s) => {
+    const its = state.items.filter((i) => i.storageId === s.id);
+    const emptyN = its.filter((i) => i.empty).length;
+    const lowN = its.filter((i) => !i.empty && i.lowWeight).length;
+    const soon = its.filter((i) => !i.empty && i.bestBefore && daysUntil(i.bestBefore) <= 2).length;
+    const flags = [
+      emptyN ? `<span class="tag warn">${emptyN} tom${emptyN > 1 ? 'me' : ''}</span>` : '',
+      lowN ? `<span class="tag warn">${lowN} under ½</span>` : '',
+      soon ? `<span class="tag bad">${soon} best før</span>` : '',
+    ].join('');
+    const n = its.length - emptyN;
+    return tile(s.id, s.icon || '📦', s.name, `${n} ${n === 1 ? 'vare' : 'varer'}`, flags);
+  });
+
+  const portions = state.leftovers.reduce((a, l) => a + (Number(l.portions) || 0), 0);
+  const oldFridge = state.leftovers.filter((l) => !isFreezer(l.storageId) && daysSince(l.addedAt || Date.now()) >= 3).length;
+  const loFlag = oldFridge ? `<span class="tag warn">${oldFridge} bør spises</span>` : '';
+  tiles.unshift(tile('leftovers', '🍲', 'Middagsrester', portions ? `${portions} porsj.` : 'Ingen rester', loFlag, 'leftover-tile'));
+
+  const orphans = state.items.filter((i) => !storageById(i.storageId));
+  let html = `<div class="storage-grid">${tiles.join('')}
+    <button class="storage-tile add" data-action="manage-storages">${icon('plus')}<span>Nytt lager</span></button>
+  </div>`;
+  if (orphans.length) html += section('Uten lager', orphans.length, sortItems(orphans).map((it) => itemCard(it)).join(''));
+  if (!state.items.length && !state.leftovers.length) {
+    html += `<p class="hint center">Trykk på et lager for å se innholdet, eller <b>+</b> for å legge inn en vare.</p>`;
   }
   return html;
 }
+
+const tile = (id, emoji, name, sub, flags, cls = '') => `
+  <button class="storage-tile ${cls}" data-action="open-storage" data-id="${esc(id)}">
+    <span class="tile-emoji">${esc(emoji)}</span>
+    <span class="tile-name">${esc(name)}</span>
+    <span class="tile-sub">${esc(sub)}</span>
+    ${flags ? `<span class="tile-flags">${flags}</span>` : ''}
+  </button>`;
 
 const sortItems = (its) => [...its].sort((a, b) =>
   (a.empty ? 1 : 0) - (b.empty ? 1 : 0) || a.name.localeCompare(b.name, 'no'));
@@ -145,7 +200,7 @@ function bestBeforeChip(bb) {
   return `<span class="tag soft">Best før ${shortDate(bb)}</span>`;
 }
 
-function itemCard(it) {
+function itemCard(it, showStorage = false) {
   const id = esc(it.id);
   let ctrl = '';
   if (it.empty) {
@@ -164,6 +219,7 @@ function itemCard(it) {
   }
 
   const tags = [];
+  if (showStorage && it.storageId) tags.push(`<span class="tag soft">${esc(storageLabel(it.storageId))}</span>`);
   if (it.staple) tags.push(`<span class="tag staple">${icon('star')}Basis</span>`);
   if (it.empty) tags.push(`<span class="tag warn">Tom · på handlelisten</span>`);
   else if (it.lowWeight) tags.push(`<span class="tag warn">På handlelisten</span>`);

@@ -1,6 +1,6 @@
 // Service worker: gjør appen installerbar og lar den starte uten nett.
 // Øk VERSION ved hver utgivelse for å tvinge frem oppdatering av cachen.
-const VERSION = 'planlegger-v2';
+const VERSION = 'planlegger-v3';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
   './js/app.js', './js/config.js', './js/state.js', './js/store.js', './js/util.js', './js/logic.js',

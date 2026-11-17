@@ -19,6 +19,7 @@ Appen kjører rett fra GitHub Pages, fungerer offline og kan installeres på hje
 - **Handletur**: Avhukede varer blir stående (gjennomstreket) til du trykker **Avslutt handletur**. Da legges de inn i lageret de er knyttet til. Finnes varen fra før, oppdateres den (antall legges til, tom/lav nullstilles). Mengde som «2 stk» eller «500 g» blir med inn.
 - **Varedatabase**: Alle varer du legger inn huskes (navn, lager, type, basisvare) og brukes til autofullføring i handlelisten, lageret og oppskrifter.
 - **Ingrediens-matching**: «mel» matcher «Hvetemel», «ost» matcher «Revet ost» osv.
+- **Lager-fanen** viser først en oversikt over alle lager. Trykk på et lager for å se varene i det.
 - **Hold inne** en vare i handlelisten for å redigere den. Android tilbake-knappen lukker skjemaer.
 
 ---

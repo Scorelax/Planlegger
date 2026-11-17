@@ -109,9 +109,17 @@ export function openOverlay(el, { onClose } = {}) {
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('open')));
   return el;
 }
+// Et "tilbake-steg" uten eget element (f.eks. inne i et lager) – Android tilbake-knapp kaller onClose.
+export function pushBack(onClose) {
+  stack.push({ el: null, onClose });
+  history.pushState({ overlay: stack.length }, '');
+}
+export const topIsBackStep = () => stack.length > 0 && !stack[stack.length - 1].el;
 function teardown({ el, onClose }) {
-  el.classList.remove('open');
-  setTimeout(() => el.remove(), 260);
+  if (el) {
+    el.classList.remove('open');
+    setTimeout(() => el.remove(), 260);
+  }
   try { onClose?.(); } catch (e) { console.error(e); }
 }
 export function closeTop(n = 1) {
