@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#121418">
+  <meta name="description" content="Oversikt over lager, handleliste og oppskrifter for husstanden.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Planlegger</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="modulepreload" href="js/app.js">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div id="app" hidden>
+    <header class="topbar">
+      <h1 id="title">Lager</h1>
+      <div class="top-actions">
+        <span id="offline" class="offline-pill" hidden>Offline</span>
+        <button id="settings-btn" class="icon-btn" aria-label="Innstillinger">
+          <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="view"></main>
+
+    <button id="fab" class="fab" aria-label="Legg til">
+      <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+    </button>
+
+    <nav class="tabbar" role="tablist">
+      <button class="tab" data-tab="shopping" role="tab">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+        <span>Handleliste</span><i class="tab-badge" id="shop-badge" hidden></i>
+      </button>
+      <button class="tab" data-tab="inventory" role="tab">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="m7.5 4.27 9 5.15"/></svg>
+        <span>Lager</span>
+      </button>
+      <button class="tab" data-tab="recipes" role="tab">
+        <svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+        <span>Oppskrifter</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="screen">
+    <div class="screen-card splash"><img src="icons/icon-192.png" alt="" class="login-logo"><div class="spinner"></div></div>
+  </div>
+  <div id="toasts" aria-live="polite"></div>
+</body>
+</html>
