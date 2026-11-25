@@ -204,6 +204,9 @@ function bestBeforeChip(bb) {
   return `<span class="tag soft">Best før ${shortDate(bb)}</span>`;
 }
 
+// Varen er skannet når varedatabasen har en strekkode lagret på navnet.
+const isScanned = (it) => !!state.products.find((p) => p.nameLower === norm(it.name))?.barcodes?.length;
+
 function itemCard(it, showStorage = false) {
   const id = esc(it.id);
   let ctrl = '';
@@ -238,7 +241,10 @@ function itemCard(it, showStorage = false) {
       </div>
       <div class="item-bottom">
         <div class="item-meta">${tags.join('')}</div>
-        ${it.empty ? '' : `<button class="pill ghost small" data-action="used-up" data-id="${id}">Brukt opp</button>`}
+        <div class="item-actions">
+          ${isScanned(it) ? `<span class="scanned-mark" title="Skannet – strekkoden er lagret" aria-label="Skannet">${icon('barcode')}</span>` : ''}
+          ${it.empty ? '' : `<button class="pill ghost small" data-action="used-up" data-id="${id}">Brukt opp</button>`}
+        </div>
       </div>
     </article>`;
 }

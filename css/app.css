@@ -74,6 +74,8 @@ p { margin: 0; }
   scrollbar-width: none;
 }
 #view::-webkit-scrollbar { display: none; }
+/* Plass til skanneknappen over + når den vises */
+body:has(#scan-fab:not([hidden])) #view { padding-bottom: calc(var(--nav-h) + 160px + var(--safe-b)); }
 
 /* ============ Fanelinje ============ */
 .tabbar {
@@ -201,6 +203,9 @@ p { margin: 0; }
 }
 .item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; }
 .item-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.item-actions { display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto; }
+.scanned-mark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 10px; color: var(--muted); background: var(--surface-2); }
+.scanned-mark .ic { width: 17px; height: 17px; }
 .item.is-staple { border-left: 3px solid var(--staple); padding-left: 14px; }
 .item.is-empty { background: transparent; border-style: dashed; }
 .item.is-empty .item-name { color: var(--muted); }
