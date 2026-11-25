@@ -8,6 +8,7 @@ import {
   sortedStorages, storageById, storageLabel, storageOptions, findProduct, productByBarcode, linkBarcode,
   stockItem, addToShopping, upsertProduct, productSuggestions, parseAmount, fmtWeight, WEIGHT_UNITS,
 } from '../logic.js';
+import { OFF_FIELDS, nutritionFromOff, fetchOffNutrition, hasNutrition, saveNutrition } from '../nutrition.js';
 
 // Vent til forrige overlay er lukket før neste åpnes (nettleserhistorikken må rekke å gå tilbake).
 const settle = () => new Promise((r) => setTimeout(r, 80));
@@ -28,7 +29,7 @@ async function lookupOnline(code) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), 7000);
   try {
-    const fields = 'product_name,product_name_nb,product_name_no,product_name_en,generic_name,brands,quantity';
+    const fields = `product_name,product_name_nb,product_name_no,product_name_en,generic_name,brands,quantity,${OFF_FIELDS}`;
     const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=${fields}`, { signal: ctrl.signal });
     if (!res.ok) return null;
     const j = await res.json();
@@ -38,7 +39,7 @@ async function lookupOnline(code) {
     const name = String(p.product_name_nb || p.product_name_no || p.product_name || p.generic_name || p.product_name_en || brand)
       .replace(/\s+/g, ' ').trim();
     if (!name) return null;
-    return { name: cap(name), quantity: parseAmount(p.quantity) };
+    return { name: cap(name), quantity: parseAmount(p.quantity), nutri: nutritionFromOff(p, code) };
   } catch {
     return null;
   } finally {
@@ -163,9 +164,16 @@ function openScanSheet({ mode, ctxStorage, code }) {
   form.name.addEventListener('change', refresh);
   attachSuggest(form.name, $('.suggest-box', sheet), productSuggestions, refresh);
 
-  // Kjent strekkode: alt er klart. Ukjent: slå opp på nettet.
+  // Kjent strekkode: alt er klart (næring hentes i bakgrunnen om den mangler). Ukjent: slå opp på nettet.
+  let offNutri = null;
   if (known) {
-    setStatus('Kjent vare');
+    setStatus(hasNutrition(known) ? 'Kjent vare · med næring' : 'Kjent vare');
+    if (!hasNutrition(known)) {
+      fetchOffNutrition(code).then((r) => {
+        offNutri = r;
+        if (r && sheet.isConnected) setStatus('Kjent vare · næring funnet');
+      });
+    }
   } else {
     setStatus('Søker etter varen…');
     form.name.placeholder = 'Søker…';
@@ -179,7 +187,8 @@ function openScanSheet({ mode, ctxStorage, code }) {
         if (!form.name.value) form.name.focus();
         return;
       }
-      setStatus('Funnet i Open Food Facts');
+      offNutri = info.nutri;
+      setStatus(info.nutri ? 'Funnet i Open Food Facts · med næring' : 'Funnet i Open Food Facts');
       if (!nameTouched && !form.name.value) form.name.value = info.name;
       // Pakningsstørrelse (f.eks. 500 g) fylles inn som forslag til vekt.
       if (info.quantity?.type === 'weight' && !form.weight.value) {
@@ -226,6 +235,11 @@ function openScanSheet({ mode, ctxStorage, code }) {
     }
     // Husk strekkoden (og pakningsvekten) til neste gang.
     linkBarcode(name, code, qtyType === 'weight' ? { packWeight: weight, packUnit: unit } : {});
+    // Næringsinnhold fra strekkoden lagres på varen – men overskriver ikke egne tall eller Matvaretabellen.
+    const own = state.products.find((p) => p.nameLower === norm(name));
+    if (offNutri && (!hasNutrition(own) || own.nutrition.source === 'off')) {
+      saveNutrition(name, offNutri.nutrition, offNutri.portions ? { ...(own?.portions || {}), ...offNutri.portions } : null);
+    }
     closeTop();
     if (next) settle().then(() => startScan({ mode, storageId: ctxStorage }));
   };

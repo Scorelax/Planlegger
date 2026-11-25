@@ -1,10 +1,11 @@
 // Service worker: gjør appen installerbar og lar den starte uten nett.
 // Øk VERSION ved hver utgivelse for å tvinge frem oppdatering av cachen.
-const VERSION = 'planlegger-v4';
+const VERSION = 'planlegger-v5';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
-  './js/app.js', './js/config.js', './js/state.js', './js/store.js', './js/util.js', './js/logic.js', './js/scanner.js',
-  './js/views/inventory.js', './js/views/shopping.js', './js/views/recipes.js', './js/views/settings.js', './js/views/scan.js',
+  './js/app.js', './js/config.js', './js/state.js', './js/store.js', './js/util.js', './js/logic.js', './js/scanner.js', './js/nutrition.js',
+  './js/views/inventory.js', './js/views/shopping.js', './js/views/recipes.js', './js/views/settings.js', './js/views/scan.js', './js/views/nutrition.js',
+  './data/matvaretabellen.json',
   './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png',
 ];
 

@@ -1,5 +1,5 @@
 // Lager-fanen: lager (kjøleskap, fryser …), varer og middagsrester.
-import { state, db } from '../state.js';
+import { state, db, onChange } from '../state.js';
 import {
   esc, norm, icon, toast, openSheet, closeTop, confirmDialog, attachSuggest, pushBack, topIsBackStep,
   daysSince, daysUntil, ageLabel, shortDate, toDateInput, parseDate, $,
@@ -10,6 +10,8 @@ import {
   fmtWeight, WEIGHT_UNITS,
 } from '../logic.js';
 import { startScan } from './scan.js';
+import { openNutritionSheet } from './nutrition.js';
+import { hasNutrition, nutritionProduct, SOURCE_LABEL } from '../nutrition.js';
 
 // current: null = oversikt over alle lager, 'leftovers' = middagsrester, ellers et lager-ID.
 let current = null;
@@ -308,13 +310,15 @@ export function openItemSheet(item, { storageId, allowLeftover = false, name = '
       <label class="field"><span>Best før <em>(valgfritt)</em></span>
         <input name="bestBefore" type="date" value="${esc(it.bestBefore || '')}">
       </label>
+      <button type="button" class="nutri-row" data-nutri>${icon('leaf')}<span class="grow">Næringsinnhold</span><small data-nutri-state></small>${icon('chevron')}</button>
       <div class="form-actions">
         ${isNew ? '' : `<button type="button" class="btn ghost danger-text" data-del>${icon('trash')}Slett</button>`}
         <button type="submit" class="btn primary grow">${isNew ? 'Legg til' : 'Lagre'}</button>
       </div>
     </form>`;
 
-  const sheet = openSheet({ title: isNew ? 'Ny vare' : 'Rediger vare', body });
+  let unsubNutri = null;
+  const sheet = openSheet({ title: isNew ? 'Ny vare' : 'Rediger vare', body, onClose: () => unsubNutri?.() });
   const form = $('form', sheet);
   let qtyType = it.qtyType || 'none';
 
@@ -339,6 +343,24 @@ export function openItemSheet(item, { storageId, allowLeftover = false, name = '
     if (p.qtyType) setQty(p.qtyType);
     if (p.unit) form.unit.value = p.unit;
     form.staple.checked = !!p.staple;
+  });
+
+  const nutriState = () => {
+    const nm = form.name.value.trim();
+    const { product, exact } = nutritionProduct(nm);
+    const el = $('[data-nutri-state]', sheet);
+    const ok = nm && hasNutrition(product);
+    el.textContent = !nm ? '' : ok ? (exact ? SOURCE_LABEL[product.nutrition.source] : `fra ${product.name}`) : 'Ikke registrert';
+    el.classList.toggle('ok', !!ok);
+  };
+  nutriState();
+  form.name.addEventListener('input', nutriState);
+  form.name.addEventListener('change', nutriState);
+  unsubNutri = onChange(nutriState);
+  $('[data-nutri]', sheet).addEventListener('click', () => {
+    const nm = form.name.value.trim();
+    if (!nm) { form.name.focus(); toast('Skriv inn navnet på varen først'); return; }
+    openNutritionSheet(nm);
   });
 
   $('[data-del]', sheet)?.addEventListener('click', async () => {

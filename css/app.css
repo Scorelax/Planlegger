@@ -606,3 +606,58 @@ body:has(.overlay) #toasts { bottom: auto; top: calc(var(--safe-t) + 12px); }
 .scan-code .ic { width: 18px; height: 18px; }
 .scan-code b { color: var(--text); font-weight: 600; letter-spacing: 0.03em; font-variant-numeric: tabular-nums; }
 .scan-note { color: var(--accent); font-size: 13px; padding-left: 2px; margin-top: -4px; }
+
+/* ============ Næringsinnhold ============ */
+.ingredients li { align-items: flex-start; }
+.ingredients li .ing-text { flex: 1; }
+.nutri-badge {
+  flex: none; align-self: center; display: inline-flex; align-items: center; gap: 4px;
+  height: 28px; padding: 0 9px; border-radius: 99px; font-size: 12.5px; font-weight: 650; white-space: nowrap;
+  background: var(--surface-2); color: var(--faint); border: 1px dashed var(--line);
+}
+.nutri-badge .ic { width: 13px; height: 13px; }
+.nutri-badge.ok { color: var(--accent); background: var(--accent-soft); border: 1px solid transparent; }
+.nutri-badge.warn { color: var(--warn); background: var(--warn-soft); border: 1px solid transparent; }
+.ingredients li.in-stock .nutri-badge.none { background: transparent; }
+.nutri-switch { margin-top: 14px; }
+.nutri-panel { padding: 14px 16px; margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.nutri-seg { margin-bottom: 2px; }
+.nutri-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+.nutri-table th { text-align: right; font-size: 12.5px; color: var(--muted); font-weight: 650; padding: 0 0 6px; }
+.nutri-table td { padding: 7px 0; border-top: 1px solid var(--line); }
+.nutri-table td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.nutri-table tr.sub td { color: var(--muted); font-size: 13.5px; padding-top: 4px; border-top: 0; }
+.nutri-table tr.sub td:first-child { padding-left: 14px; }
+.nutri-table tr.kcal td { font-weight: 750; font-size: 15.5px; }
+.nutri-count { display: flex; align-items: center; gap: 6px; color: var(--warn); font-size: 13.5px; font-weight: 600; }
+.nutri-count.full { color: var(--accent); }
+.nutri-count .ic { width: 15px; height: 15px; }
+.nutri-notes { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13.5px; }
+.nutri-missing { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.nutri-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; font-size: 16px; }
+.nutri-src { color: var(--muted); font-size: 13.5px; margin-bottom: 8px; }
+.nutri-used { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent); margin-bottom: 10px; }
+.nutri-used div { display: flex; flex-direction: column; gap: 2px; }
+.nutri-used small { color: var(--muted); }
+.nutri-used.warn { background: var(--warn-soft); color: var(--warn); }
+.nutri-results { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 4px; }
+.nutri-hit {
+  display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 10px 12px;
+  border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
+}
+.nutri-hit:active { background: var(--surface-3); }
+.nutri-hit span { font-weight: 600; }
+.nutri-hit small { color: var(--muted); }
+.nutri-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.nutri-grid .field.sub > span { color: var(--faint); }
+.nutri-form .per-seg { margin-bottom: 2px; }
+.center-btn { display: flex; align-items: center; gap: 6px; margin: 12px auto 0; }
+.nutri-row {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; text-align: left;
+  border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--line); font-weight: 600;
+}
+.nutri-row .ic { color: var(--muted); }
+.nutri-row small { color: var(--muted); font-weight: 500; }
+.nutri-row small.ok { color: var(--accent); }
+.auto-rows { display: flex; flex-direction: column; gap: 12px; margin: 10px 0; }
+.sheet .search { margin-top: 4px; }

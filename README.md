@@ -25,6 +25,13 @@ Appen kjører rett fra GitHub Pages, fungerer offline og kan installeres på hje
   - *I handlelisten*: står varen på lista, legges den i kurven med mengden du velger. Ellers legges den til på lista.
   - Ukjente strekkoder slås opp i [Open Food Facts](https://world.openfoodfacts.org). Strekkoden lagres i varedatabasen, så neste skanning kjennes igjen med en gang – også uten nett.
   - «Neste» lagrer og åpner kameraet igjen, fint når handleposene skal pakkes ut.
+- **Næringsinnhold** lagres på varen i varedatabasen og kan hentes tre steder fra:
+  - *Strekkode*: hentes automatisk fra Open Food Facts når du skanner en vare.
+  - *Matvaretabellen* (Mattilsynet): søk opp f.eks. «løk» eller «egg» – fint for råvarer uten strekkode. Gir også vekt per stk, dl og ss.
+  - *Egne tall*: skriv inn fra næringsdeklarasjonen på pakken (per 100 g eller 100 ml), f.eks. for varer kjøpt i utlandet.
+  - Åpnes fra «Næringsinnhold» når du redigerer en vare i lageret, eller fra merket ved hver ingrediens i en oppskrift.
+- **Næring i oppskrifter**: hver ingrediens viser et merke (kcal, «? kcal» om mengden ikke kan regnes om, eller «Næring» om det mangler). Bryteren «Næringsinnhold» viser sum per porsjon eller for hele oppskriften, og hvor mange ingredienser som er regnet med. «Finn i Matvaretabellen» foreslår tall for alle som mangler på en gang.
+  - Mengder regnes om til gram: g/kg direkte, dl/ss/ts via vekt per dl (1 dl ≈ 100 g antas om den mangler), stk/pakke/boks via vekt per enhet.
 - **Hold inne** en vare i handlelisten for å redigere den. Android tilbake-knappen lukker skjemaer.
 
 ---
@@ -62,6 +69,7 @@ Hold inne app-ikonet for snarveier rett til Handleliste eller Oppskrifter.
 - Firebase Auth (Google) + Cloud Firestore med offline-cache og sanntidssynk.
 - Service worker (`sw.js`) for offline-støtte. Øk `VERSION` i `sw.js` ved nye utgivelser.
 - Strekkoder leses med nettleserens innebygde `BarcodeDetector` (Chrome på Android). Der den mangler (f.eks. iPhone), lastes en ZXing-basert reserve fra jsDelivr første gang.
+- Næringstall fra [Matvaretabellen](https://www.matvaretabellen.no) (Mattilsynet) ligger i `data/matvaretabellen.json`. Tabellen oppdateres hver høst – kjør `python tools/matvaretabellen.py` for å hente nye tall.
 - Bilder komprimeres i nettleseren (maks ~1000 px JPEG) og lagres sammen med oppskriften.
 - Eksport til CSV (åpnes i Excel) og sikkerhetskopi/gjenoppretting som JSON under Innstillinger.
 
@@ -81,7 +89,9 @@ js/app.js             Oppstart, innlogging, faner, hendelser
 js/store.js           Datalag: Firebase eller lokal lagring
 js/logic.js           Regler: lager ↔ handleliste ↔ oppskrifter
 js/scanner.js         Kamera og strekkodelesing
-js/views/*.js         Fanene + innstillinger (scan.js: skjemaet etter skanning)
+js/nutrition.js       Næringsinnhold: omregning av mengder, beregning, Matvaretabellen og Open Food Facts
+data/matvaretabellen.json  Utdrag av Matvaretabellen (lages med tools/matvaretabellen.py)
+js/views/*.js         Fanene + innstillinger (scan.js: skjemaet etter skanning, nutrition.js: næringsark)
 sw.js                 Service worker (offline)
 firestore.rules       Sikkerhetsregler for Firestore
 ```

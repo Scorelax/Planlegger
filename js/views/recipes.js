@@ -8,10 +8,14 @@ import {
   coverage, matchItem, onShoppingList, addMissingToShopping, storageLabel, productSuggestions, upsertProduct,
 } from '../logic.js';
 import { empty } from './inventory.js';
+import { ingredientBadge, recipeNutritionPanel, openNutritionSheet, openAutoMatchSheet } from './nutrition.js';
+import { recipeNutrition } from '../nutrition.js';
 
 let query = '';
 let favOnly = false;
 let cookMode = false;
+let showNutrition = localStorage.getItem('recipeNutrition') === '1';
+let nutritionMode = localStorage.getItem('recipeNutritionMode') || 'portion';
 
 export const recipesView = {
   title: 'Oppskrifter',
@@ -154,7 +158,7 @@ function openDetail(id) {
         <input type="checkbox" class="switch" data-act-change="wake" ${wantWake ? 'checked' : ''} ${wakeSupported ? '' : 'disabled'}>
       </label>
       <h2 class="sec-title">Ingredienser</h2>
-      ${ings.length ? `<ul class="ingredients">${ings.map((i) => {
+      ${ings.length ? `<ul class="ingredients">${ings.map((i, idx) => {
         const m = matchItem(i.name);
         const listed = !m && onShoppingList(i.name);
         return `<li class="${m ? 'in-stock' : ''}">
@@ -162,10 +166,18 @@ function openDetail(id) {
           <span class="ing-text"><span class="ing-line"><span class="ing-name">${esc(i.name)}</span>${i.amount ? `<span class="ing-amount">${esc(i.amount)}</span>` : ''}</span>
             ${m ? `<small>${esc(m.name)}${m.storageId ? ' · ' + esc(storageLabel(m.storageId)) : ''}</small>` : ''}
             ${listed ? `<small class="listed">${icon('cart')}På handlelisten</small>` : ''}</span>
+          ${ingredientBadge(i, idx)}
         </li>`;
       }).join('')}</ul>` : '<p class="hint">Ingen ingredienser lagt inn.</p>'}
       ${notListed.length ? `<button class="btn secondary block" data-act="add-missing">${icon('cart')}Legg ${notListed.length} manglende i handlelisten</button>`
         : ings.length && !missing.length ? `<div class="all-good">${icon('check')}Dere har alt på lager!</div>` : ''}
+      ${ings.length ? (() => {
+        const nr = recipeNutrition(r);
+        return `<label class="switch-row nutri-switch">
+          <div><b>${icon('leaf')} Næringsinnhold</b><small>Beregnet for ${nr.counted} av ${nr.total} ingredienser</small></div>
+          <input type="checkbox" class="switch" data-act-change="nutrition" ${showNutrition ? 'checked' : ''}>
+        </label>${showNutrition ? recipeNutritionPanel(r, nutritionMode) : ''}`;
+      })() : ''}
       <h2 class="sec-title">Fremgangsmåte</h2>
       ${r.steps?.trim() ? `<div class="steps">${esc(r.steps)}</div>` : '<p class="hint">Ingen fremgangsmåte lagt inn.</p>'}`;
   };
@@ -180,12 +192,27 @@ function openDetail(id) {
     if (act === 'back') closeTop();
     else if (act === 'fav' && r) db.update('recipes', id, { favorite: !r.favorite });
     else if (act === 'edit' && r) openEditor(r);
+    else if (act === 'nutri' && r) {
+      const ing = (r.ingredients || []).filter((i) => i.name?.trim())[Number(b.dataset.idx)];
+      if (ing) openNutritionSheet(ing.name, { amount: ing.amount });
+    } else if (act === 'nutri-mode') {
+      nutritionMode = b.dataset.mode;
+      localStorage.setItem('recipeNutritionMode', nutritionMode);
+      render();
+    } else if (act === 'nutri-auto' && r) {
+      openAutoMatchSheet(recipeNutrition(r).missing);
+    }
     else if (act === 'add-missing' && r) {
       const n = addMissingToShopping(r);
       toast(n ? `${n} ${n === 1 ? 'vare' : 'varer'} lagt i handlelisten` : 'Alt sto allerede på lista');
     }
   });
   page.addEventListener('change', (e) => {
+    if (e.target.matches('[data-act-change="nutrition"]')) {
+      showNutrition = e.target.checked;
+      localStorage.setItem('recipeNutrition', showNutrition ? '1' : '0');
+      render();
+    }
     if (e.target.matches('[data-act-change="wake"]')) {
       setWake(e.target.checked);
       if (e.target.checked) toast('Skjermen holdes våken mens oppskriften er åpen');

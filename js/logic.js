@@ -284,7 +284,7 @@ export function finishShopping() {
 }
 
 // ---------- Oppskrifter ----------
-const wordIn = (needle, hay) =>
+export const wordIn = (needle, hay) =>
   needle.length >= 3 && new RegExp(`(^|[^a-zæøå])${escRe(needle)}[a-zæøå]{0,3}($|[^a-zæøå])`).test(hay);
 
 // Finner en vare på lager som matcher en ingrediens (eksakt navn, helt ord, eller sammensatt ord: "hvetemel" ⇒ "mel").
