@@ -143,6 +143,7 @@ function switchTab(name, force = false) {
     b.setAttribute('aria-selected', b.dataset.tab === name);
   });
   $('#title').textContent = views[name].title;
+  $('#scan-fab').hidden = !views[name].scan;
   const view = $('#view');
   view.scrollTop = 0;
   view.dataset.tab = name;
@@ -158,6 +159,7 @@ document.addEventListener('click', (e) => {
   const tabBtn = e.target.closest('.tab');
   if (tabBtn) { switchTab(tabBtn.dataset.tab); return; }
   if (e.target.closest('#fab')) { views[tab].fab(); return; }
+  if (e.target.closest('#scan-fab')) { views[tab].scan?.(); return; }
   if (e.target.closest('#settings-btn')) {
     openSettings({ mode: store.mode, user: state.user, signOut: () => store.signOut() });
     return;

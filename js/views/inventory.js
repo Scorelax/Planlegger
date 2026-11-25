@@ -9,6 +9,7 @@ import {
   updateItem, setCount, usedUp, refill, upsertProduct, productSuggestions, syncAuto,
   fmtWeight, WEIGHT_UNITS,
 } from '../logic.js';
+import { startScan } from './scan.js';
 
 // current: null = oversikt over alle lager, 'leftovers' = middagsrester, ellers et lager-ID.
 let current = null;
@@ -53,6 +54,7 @@ export const inventoryView = {
     if (current === 'leftovers') openLeftoverSheet(null);
     else openItemSheet(null, { storageId: storageById(current) ? current : undefined, allowLeftover: !current });
   },
+  scan() { startScan({ mode: 'inventory', storageId: current }); },
   actions: {
     'open-storage': (el) => openStorage(el.dataset.id),
     'inv-back': () => backToOverview(),

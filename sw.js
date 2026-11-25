@@ -1,10 +1,10 @@
 // Service worker: gjør appen installerbar og lar den starte uten nett.
 // Øk VERSION ved hver utgivelse for å tvinge frem oppdatering av cachen.
-const VERSION = 'planlegger-v3';
+const VERSION = 'planlegger-v4';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css',
-  './js/app.js', './js/config.js', './js/state.js', './js/store.js', './js/util.js', './js/logic.js',
-  './js/views/inventory.js', './js/views/shopping.js', './js/views/recipes.js', './js/views/settings.js',
+  './js/app.js', './js/config.js', './js/state.js', './js/store.js', './js/util.js', './js/logic.js', './js/scanner.js',
+  './js/views/inventory.js', './js/views/shopping.js', './js/views/recipes.js', './js/views/settings.js', './js/views/scan.js',
   './icons/icon-192.png', './icons/icon-512.png', './icons/favicon.png',
 ];
 
@@ -25,8 +25,9 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
 
-  // Firebase SDK fra gstatic: versjonerte filer, cache først.
-  if (url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/')) {
+  // Firebase SDK fra gstatic og strekkodeleser fra jsDelivr: versjonerte filer, cache først.
+  if ((url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/')) ||
+      (/^(cdn|fastly)\.jsdelivr\.net$/.test(url.hostname) && /@\d/.test(url.pathname))) {
     e.respondWith(caches.open(VERSION).then(async (c) => {
       const hit = await c.match(req);
       if (hit) return hit;

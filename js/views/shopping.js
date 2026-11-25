@@ -6,6 +6,7 @@ import {
   productSuggestions, upsertProduct, findProduct,
 } from '../logic.js';
 import { empty } from './inventory.js';
+import { startScan } from './scan.js';
 
 export const shoppingView = {
   title: 'Handleliste',
@@ -18,6 +19,7 @@ export const shoppingView = {
     if (body) body.innerHTML = renderBody();
   },
   fab() { openShopSheet(null); },
+  scan() { startScan({ mode: 'shopping' }); },
   actions: {
     'toggle-check': (el) => {
       const s = state.shopping.find((x) => x.id === el.dataset.id);

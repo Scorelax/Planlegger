@@ -20,6 +20,11 @@ Appen kjører rett fra GitHub Pages, fungerer offline og kan installeres på hje
 - **Varedatabase**: Alle varer du legger inn huskes (navn, lager, type, basisvare) og brukes til autofullføring i handlelisten, lageret og oppskrifter.
 - **Ingrediens-matching**: «mel» matcher «Hvetemel», «ost» matcher «Revet ost» osv.
 - **Lager-fanen** viser først en oversikt over alle lager. Trykk på et lager for å se varene i det.
+- **Skann strekkode** (knappen over +, i Lager og Handleliste): velg antall eller vekt før varen legges inn.
+  - *I lageret*: varen legges i lageret du står i (ellers lageret den hører til). Finnes den fra før, legges mengden til (2 stk + 3 stk = 5 stk, 1 kg + 500 g = 1,5 kg).
+  - *I handlelisten*: står varen på lista, legges den i kurven med mengden du velger. Ellers legges den til på lista.
+  - Ukjente strekkoder slås opp i [Open Food Facts](https://world.openfoodfacts.org). Strekkoden lagres i varedatabasen, så neste skanning kjennes igjen med en gang – også uten nett.
+  - «Neste» lagrer og åpner kameraet igjen, fint når handleposene skal pakkes ut.
 - **Hold inne** en vare i handlelisten for å redigere den. Android tilbake-knappen lukker skjemaer.
 
 ---
@@ -56,6 +61,7 @@ Hold inne app-ikonet for snarveier rett til Handleliste eller Oppskrifter.
 - Ren HTML/CSS/JavaScript (ES-moduler), ingen byggesteg.
 - Firebase Auth (Google) + Cloud Firestore med offline-cache og sanntidssynk.
 - Service worker (`sw.js`) for offline-støtte. Øk `VERSION` i `sw.js` ved nye utgivelser.
+- Strekkoder leses med nettleserens innebygde `BarcodeDetector` (Chrome på Android). Der den mangler (f.eks. iPhone), lastes en ZXing-basert reserve fra jsDelivr første gang.
 - Bilder komprimeres i nettleseren (maks ~1000 px JPEG) og lagres sammen med oppskriften.
 - Eksport til CSV (åpnes i Excel) og sikkerhetskopi/gjenoppretting som JSON under Innstillinger.
 
@@ -74,7 +80,8 @@ css/app.css           Design (mørkt tema)
 js/app.js             Oppstart, innlogging, faner, hendelser
 js/store.js           Datalag: Firebase eller lokal lagring
 js/logic.js           Regler: lager ↔ handleliste ↔ oppskrifter
-js/views/*.js         Fanene + innstillinger
+js/scanner.js         Kamera og strekkodelesing
+js/views/*.js         Fanene + innstillinger (scan.js: skjemaet etter skanning)
 sw.js                 Service worker (offline)
 firestore.rules       Sikkerhetsregler for Firestore
 ```

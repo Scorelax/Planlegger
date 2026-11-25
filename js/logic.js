@@ -51,6 +51,63 @@ export function upsertProduct(p) {
   db.set('products', productId(p.name), data, true);
 }
 
+// ---------- Strekkoder ----------
+export const productByBarcode = (code) => state.products.find((p) => p.barcodes?.includes(code)) || null;
+
+// Knytter en strekkode til en vare i varedatabasen (og tar den bort fra andre varer).
+// extra: f.eks. { packWeight, packUnit } – pakningsvekt som foreslås neste gang.
+export function linkBarcode(name, code, extra = {}) {
+  if (!code || !name?.trim()) return;
+  const id = productId(name);
+  for (const p of state.products) {
+    if (p.id !== id && p.barcodes?.includes(code)) {
+      db.update('products', p.id, { barcodes: p.barcodes.filter((c) => c !== code) });
+    }
+  }
+  const own = state.products.find((p) => p.id === id);
+  const barcodes = [...new Set([...(own?.barcodes || []), code])];
+  db.set('products', id, { ...extra, name: name.trim(), nameLower: norm(name), barcodes, updatedAt: Date.now() }, true);
+}
+
+// Summerer to vekter/volum med ulik enhet. Svaret er i enheten til den første, eller null om de ikke passer sammen.
+const UNIT_BASE = { g: ['m', 1], kg: ['m', 1000], ml: ['v', 1], cl: ['v', 10], dl: ['v', 100], l: ['v', 1000] };
+export function addWeight(a, aUnit, b, bUnit) {
+  const ua = UNIT_BASE[aUnit || 'g'], ub = UNIT_BASE[bUnit || 'g'];
+  if (a == null || a === '' || !ua || !ub || ua[0] !== ub[0]) return null;
+  const sum = Number(a) * ua[1] + Number(b) * ub[1];
+  return Math.round((sum / ua[1]) * 1000) / 1000;
+}
+
+// Legger en vare på lager med valgt mengde. Finnes den fra før i samme lager, legges mengden til.
+export function stockItem({ name, storageId, qtyType = 'none', count = 1, weight = null, unit = 'g' }) {
+  name = name.trim();
+  if (qtyType === 'weight' && !weight) qtyType = 'none';
+  const now = Date.now();
+  const dup = state.items.find((i) => norm(i.name) === norm(name) && i.storageId === storageId);
+  if (dup) {
+    const patch = { empty: false, lowWeight: false };
+    if (qtyType === 'count') {
+      Object.assign(patch, { qtyType, count: (dup.qtyType === 'count' && !dup.empty ? Number(dup.count) || 0 : 0) + count });
+    } else if (qtyType === 'weight') {
+      const fresh = dup.qtyType === 'weight' && !dup.empty && !dup.lowWeight;
+      const sum = fresh ? addWeight(dup.weight, dup.unit, weight, unit) : null;
+      Object.assign(patch, sum != null ? { qtyType, weight: sum, unit: dup.unit || 'g' } : { qtyType, weight, unit });
+    }
+    return { item: updateItem(dup, patch), added: false };
+  }
+  const prod = findProduct(name);
+  const id = db.newId('items');
+  const doc = {
+    name, storageId, qtyType, staple: !!prod?.staple,
+    count: qtyType === 'count' ? count : 0,
+    weight: qtyType === 'weight' ? weight : null,
+    unit, bestBefore: null, empty: false, lowWeight: false, addedAt: now, updatedAt: now,
+  };
+  db.set('items', id, doc, false);
+  syncAuto({ ...doc, id });
+  return { item: { ...doc, id }, added: true };
+}
+
 // Forslag til autofullføring fra varedatabasen + lager.
 export function productSuggestions(q) {
   const n = norm(q);
